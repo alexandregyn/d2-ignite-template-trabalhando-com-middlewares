@@ -20,21 +20,25 @@ function checksExistsUserAccount(request, response, next) {
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  const { pro, todos } = request.user;
-  if (!pro && todos.length() === 10 ) {
+  const { user } = request;
+  if (!user.pro && (user.todos.length + 1) > 9) {
     return response.status(403).json({erro: 'Limite do plano gratuíto atingido!'});
   }
   return next();
 }
 
 function checksTodoExists(request, response, next) {
+  const { username } = request.headers;
   const { id } = request.params;
-  const { user } = request;
-  const todo = user.todos.find(todo => todo.id === id);
+  const user = users.find(user => user.username === username);
+  if (!user) {
+    return response.status(404).json({ error: 'User not exists!' });
+  }
   const uuidIsValid = validate(id);
   if (!uuidIsValid) {
     return response.status(400).json({ error: 'ID inválido!' });
   }
+  const todo = user.todos.find(todo => todo.id === id);
   if (!todo) {
     return response.status(404).json({ error: 'Todo not exists!' });
   }
@@ -44,7 +48,13 @@ function checksTodoExists(request, response, next) {
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+  const user = users.find((user) => user.id === id);
+  if (!user) {
+    return response.status(404).json({ error: 'User not exists!' });
+  }
+  request.user = user;
+  return next();
 }
 
 app.post('/users', (request, response) => {
@@ -71,6 +81,7 @@ app.post('/users', (request, response) => {
 
 app.get('/users/:id', findUserById, (request, response) => {
   const { user } = request;
+  console.log(user);
 
   return response.json(user);
 });
